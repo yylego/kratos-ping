@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package clientpingkratos;
+
+import "google/api/annotations.proto";
+import "google/protobuf/descriptor.proto";
+import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/yylego/kratos-ping/pingkratos/clientpingkratos;clientpingkratos";
+option java_multiple_files = true;
+option java_package = "clientpingkratos";
+
+service Ping {
+  rpc Ping(google.protobuf.StringValue) returns (google.protobuf.StringValue) {
+    option (google.api.http) = {
+      get: "/api/service/ping"
+    };
+  }
+}
