@@ -5,17 +5,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-kratos/kratos/v2"
-	"github.com/go-kratos/kratos/v2/middleware/logging"
-	"github.com/go-kratos/kratos/v2/middleware/recovery"
-	"github.com/go-kratos/kratos/v2/transport/grpc"
-	"github.com/go-kratos/kratos/v2/transport/http"
+	"github.com/go-kratos/kratos/v3"
+	"github.com/go-kratos/kratos/v3/log"
+	"github.com/go-kratos/kratos/v3/middleware/logging"
+	"github.com/go-kratos/kratos/v3/middleware/recovery"
+	"github.com/go-kratos/kratos/v3/transport/grpc"
+	"github.com/go-kratos/kratos/v3/transport/http"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/yylego/kratos-ping/internal/utils"
 	"github.com/yylego/kratos-ping/pingkratos/clientpingkratos"
 	"github.com/yylego/kratos-ping/pingkratos/serverpingkratos"
-	"github.com/yylego/kratos-zap/zapkratos"
 	"github.com/yylego/must"
 	"github.com/yylego/rese"
 	"github.com/yylego/zaplog"
@@ -31,7 +31,7 @@ var (
 func TestMain(m *testing.M) {
 	// Create logger to show ping request logs
 	// 创建 logger 以显示 ping 请求日志
-	zapKratos := zapkratos.NewZapKratos(zaplog.LOGGER, zapkratos.NewOptions())
+	applog := log.NewLogger(log.NewHandler())
 
 	// Create HTTP server with dynamic port (port 0 = random available port)
 	// 使用动态端口创建 HTTP 服务器（端口 0 表示随机可用端口）
@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 		http.Address(":0"),
 		http.Middleware(
 			recovery.Recovery(),
-			logging.Server(zapKratos.GetLogger("HTTP")),
+			logging.Server(applog.With("caption", "HTTP")),
 		),
 		http.Timeout(time.Minute),
 	)
@@ -51,7 +51,7 @@ func TestMain(m *testing.M) {
 		grpc.Address(":0"),
 		grpc.Middleware(
 			recovery.Recovery(),
-			logging.Server(zapKratos.GetLogger("GRPC")),
+			logging.Server(applog.With("caption", "GRPC")),
 		),
 		grpc.Timeout(time.Minute),
 	)
@@ -59,7 +59,7 @@ func TestMain(m *testing.M) {
 
 	// Create ping service
 	// 创建 ping 服务
-	pingService := serverpingkratos.NewPingService(zapKratos.GetLogger("PING"))
+	pingService := serverpingkratos.NewPingService(applog.With("caption", "PING"))
 	clientpingkratos.RegisterPingHTTPServer(httpSrv, pingService)
 	clientpingkratos.RegisterPingServer(grpcSrv, pingService)
 
@@ -111,7 +111,7 @@ func TestPingService_Ping_HTTP(t *testing.T) {
 func TestPingService_Ping_gRPC(t *testing.T) {
 	// Create gRPC client connecting to dynamic port
 	// 创建 gRPC 客户端连接到动态端口
-	conn := rese.P1(grpc.DialInsecure(
+	conn := rese.P1(grpc.NewClient(
 		context.Background(),
 		grpc.WithEndpoint("127.0.0.1:"+grpcPort),
 		grpc.WithMiddleware(recovery.Recovery()),

@@ -2,8 +2,8 @@ package serverpingkratos
 
 import (
 	"context"
+	"log/slog"
 
-	"github.com/go-kratos/kratos/v2/log"
 	pb "github.com/yylego/kratos-ping/pingkratos/clientpingkratos"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
@@ -12,14 +12,14 @@ import (
 // PingService 实现 Ping 服务，支持可配置的日志记录
 type PingService struct {
 	pb.UnimplementedPingServer
-	slog *log.Helper
+	applog *slog.Logger
 }
 
 // NewPingService creates a new PingService with the provided logger
 // 使用提供的 logger 创建新的 PingService
-func NewPingService(logger log.Logger) *PingService {
+func NewPingService(applog *slog.Logger) *PingService {
 	return &PingService{
-		slog: log.NewHelper(logger),
+		applog: applog,
 	}
 }
 
@@ -27,6 +27,6 @@ func NewPingService(logger log.Logger) *PingService {
 // Ping 处理 ping 请求并返回相同的消息
 func (s *PingService) Ping(ctx context.Context, req *wrapperspb.StringValue) (*wrapperspb.StringValue, error) {
 	message := req.GetValue()
-	s.slog.WithContext(ctx).Debugf("ping service processing message: %s", message)
+	s.applog.DebugContext(ctx, "ping service processing message", "message", message)
 	return wrapperspb.String(message), nil
 }

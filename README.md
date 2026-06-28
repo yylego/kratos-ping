@@ -12,9 +12,11 @@ Simple and fast Ping service package to support the Kratos framework, with both 
 ---
 
 <!-- TEMPLATE (EN) BEGIN: LANGUAGE NAVIGATION -->
+
 ## CHINESE README
 
 [中文说明](README.zh.md)
+
 <!-- TEMPLATE (EN) END: LANGUAGE NAVIGATION -->
 
 ## Features
@@ -42,13 +44,13 @@ package main
 import (
 	"time"
 
-	"github.com/go-kratos/kratos/v2"
-	"github.com/go-kratos/kratos/v2/middleware/logging"
-	"github.com/go-kratos/kratos/v2/middleware/recovery"
-	"github.com/go-kratos/kratos/v2/transport/http"
+	"github.com/go-kratos/kratos/v3"
+	"github.com/go-kratos/kratos/v3/log"
+	"github.com/go-kratos/kratos/v3/middleware/logging"
+	"github.com/go-kratos/kratos/v3/middleware/recovery"
+	"github.com/go-kratos/kratos/v3/transport/http"
 	"github.com/yylego/kratos-ping/clientpingkratos"
 	"github.com/yylego/kratos-ping/serverpingkratos"
-	"github.com/yylego/kratos-zap"
 	"github.com/yylego/must"
 	"github.com/yylego/rese"
 	"github.com/yylego/zaplog"
@@ -57,20 +59,20 @@ import (
 
 func main() {
 	// Setup logging to show ping request logs
-	zapKratos := zapkratos.NewZapKratos(zaplog.LOGGER, zapkratos.NewOptions())
+	applog := log.NewLogger(log.NewHandler())
 
 	// Setup HTTP service on port 8000
 	httpSrv := http.NewServer(
 		http.Address(":8000"),
 		http.Middleware(
 			recovery.Recovery(),
-			logging.Server(zapKratos.GetLogger("HTTP")),
+			logging.Server(applog.With("caption", "HTTP")),
 		),
 		http.Timeout(time.Minute),
 	)
 
 	// Setup ping service
-	pingService := serverpingkratos.NewPingService(zapKratos.GetLogger("PING"))
+	pingService := serverpingkratos.NewPingService(applog.With("caption", "PING"))
 	clientpingkratos.RegisterPingHTTPServer(httpSrv, pingService)
 
 	// Setup and start application
@@ -97,13 +99,13 @@ package main
 import (
 	"time"
 
-	"github.com/go-kratos/kratos/v2"
-	"github.com/go-kratos/kratos/v2/middleware/logging"
-	"github.com/go-kratos/kratos/v2/middleware/recovery"
-	"github.com/go-kratos/kratos/v2/transport/grpc"
+	"github.com/go-kratos/kratos/v3"
+	"github.com/go-kratos/kratos/v3/log"
+	"github.com/go-kratos/kratos/v3/middleware/logging"
+	"github.com/go-kratos/kratos/v3/middleware/recovery"
+	"github.com/go-kratos/kratos/v3/transport/grpc"
 	"github.com/yylego/kratos-ping/clientpingkratos"
 	"github.com/yylego/kratos-ping/serverpingkratos"
-	"github.com/yylego/kratos-zap"
 	"github.com/yylego/must"
 	"github.com/yylego/rese"
 	"github.com/yylego/zaplog"
@@ -112,20 +114,20 @@ import (
 
 func main() {
 	// Setup logging to show ping request logs
-	zapKratos := zapkratos.NewZapKratos(zaplog.LOGGER, zapkratos.NewOptions())
+	applog := log.NewLogger(log.NewHandler())
 
 	// Setup gRPC service on port 9000
 	grpcSrv := grpc.NewServer(
 		grpc.Address(":9000"),
 		grpc.Middleware(
 			recovery.Recovery(),
-			logging.Server(zapKratos.GetLogger("GRPC")),
+			logging.Server(applog.With("caption", "GRPC")),
 		),
 		grpc.Timeout(time.Minute),
 	)
 
 	// Setup ping service
-	pingService := serverpingkratos.NewPingService(zapKratos.GetLogger("PING"))
+	pingService := serverpingkratos.NewPingService(applog.With("caption", "PING"))
 	clientpingkratos.RegisterPingServer(grpcSrv, pingService)
 
 	// Setup and start application
@@ -147,7 +149,8 @@ func main() {
 ## Dependencies
 
 ### Core Dependencies
-- `github.com/go-kratos/kratos/v2` - Kratos framework
+
+- `github.com/go-kratos/kratos/v3` - Kratos framework
 - `google.golang.org/grpc` - gRPC support
 - `google.golang.org/protobuf` - Protocol Buffers
 - `github.com/yylego/*` - Utilities
@@ -194,7 +197,7 @@ func NewHTTPServer(
     c *conf.Server,
     greeter *service.GreeterService,
     pingService *serverpingkratos.PingService,
-    logger log.Logger,
+    applog *slog.Logger,
 ) *http.Server {
     srv := http.NewServer(opts...)
     v1.RegisterGreeterHTTPServer(srv, greeter)
@@ -217,7 +220,7 @@ func NewGRPCServer(
     c *conf.Server,
     greeter *service.GreeterService,
     pingService *serverpingkratos.PingService,
-    logger log.Logger,
+    applog *slog.Logger,
 ) *grpc.Server {
     srv := grpc.NewServer(opts...)
     v1.RegisterGreeterServer(srv, greeter)
@@ -235,6 +238,7 @@ wire ./cmd/demo-app/...
 ### Demo Projects
 
 Complete working examples:
+
 - [pingkratos-demos](https://github.com/yylego/kratos-ping-demos) - Complete Kratos project integration
 
 Unit test examples: [TEST](serverpingkratos/ping_test.go).
